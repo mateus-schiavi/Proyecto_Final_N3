@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $query = 'SELECT * FROM usuarios WHERE correo = :correo';
     $stmt = $conn->prepare($query);
-    $stmt->bindParam(':correo', $correo);
+    $stmt->bindParam(':correo', $email);
     $stmt->execute();
     $user = $stmt->fetch();
 
