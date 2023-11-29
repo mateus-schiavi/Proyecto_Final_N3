@@ -7,38 +7,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = $_POST['email'];
         $password = $_POST['password'];
 
-        $sql = 'SELECT user_id, rol, email, name, surname, address, birth_date FROM users WHERE email = ? AND password = ?';
+        $sql = 'SELECT user_id, rol, email, name, surname, address, birth_date, password FROM users WHERE email = ?';
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ss", $email, $password);
+        $stmt->bind_param("s", $email);
         $stmt->execute();
         $stmt->store_result();
 
         if ($stmt->num_rows == 1) {
-            $stmt->bind_result($id, $rol, $email, $name, $surname, $address, $birth_date);
+            $stmt->bind_result($id, $rol, $email, $name, $surname, $address, $birth_date, $passwordHash);
             $stmt->fetch();
-            session_start();
-            $_SESSION['id'] = $id;
-            $_SESSION['rol'] = $rol;
-            $_SESSION['email'] = $email;
-            $_SESSION['name'] = $name;
-            $_SESSION['surname'] = $surname;
-            $_SESSION['address'] = $address;
-            $_SESSION['birth_date'] = $birth_date;
 
+            if (password_verify($password, $passwordHash)) {
+                session_start();
+                $_SESSION['id'] = $id;
+                $_SESSION['rol'] = $rol;
+                $_SESSION['email'] = $email;
+                $_SESSION['name'] = $name;
+                $_SESSION['surname'] = $surname;
+                $_SESSION['address'] = $address;
+                $_SESSION['birth_date'] = $birth_date;
 
-            switch ($rol) {
-                case 'ADMIN':
-                    header('Location: ../admin/dashboard.php');
-                    break;
-                case 'PROFESSOR':
-                    header('Location: ../professor/dashboard.php');
-                    break;
-                case 'STUDENT':
-                    header('Location: ../student/dashboard.php');
-                    break;
-                default:
-                    echo 'Invalid Credentials';
-                    break;
+                switch ($rol) {
+                    case 'ADMIN':
+                        header('Location: ../admin/dashboard.php');
+                        break;
+                    case 'PROFESSOR':
+                        header('Location: ../professor/dashboard.php');
+                        break;
+                    case 'STUDENT':
+                        header('Location: ../student/dashboard.php');
+                        break;
+                    default:
+                        echo 'Invalid Credentials';
+                        break;
+                }
+            } else {
+                echo "Invalid Credentials";
             }
         } else {
             echo "Invalid Credentials";
@@ -50,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "Please, fill all the required fields";
     }
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
