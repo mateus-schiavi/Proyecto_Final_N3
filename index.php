@@ -1,42 +1,47 @@
 <?php
 require_once './config/config.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Verifica se a sessão ainda não foi iniciada antes de iniciar uma nova
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['email']) && isset($_POST['password'])) {
         $email = $_POST['email'];
         $password = $_POST['password'];
 
-        $sql = 'SELECT user_id, rol, email, name, surname, address, birth_date, password FROM users WHERE email = ?';
+        $sql = 'SELECT id, name, surname, email, password, role_id FROM users WHERE email = ?';
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $email);
         $stmt->execute();
-        $stmt->store_result();
+        $result = $stmt->get_result();
 
-        if ($stmt->num_rows == 1) {
-            $stmt->bind_result($id, $rol, $email, $name, $surname, $address, $birth_date, $passwordHash);
-            $stmt->fetch();
+        if ($result->num_rows == 1) {
+            $row = $result->fetch_assoc();
+            $id = $row['id'];
+            $name = $row['name'];
+            $surname = $row['surname'];
+            $storedPasswordHash = $row['password'];
+            $role_id = $row['role_id'];
 
-            if (password_verify($password, $passwordHash)) {
-                session_start();
+            if (password_verify($password, $storedPasswordHash)) {
                 $_SESSION['id'] = $id;
-                $_SESSION['rol'] = $rol;
+                $_SESSION['rol'] = $role_id;
                 $_SESSION['email'] = $email;
                 $_SESSION['name'] = $name;
                 $_SESSION['surname'] = $surname;
-                $_SESSION['address'] = $address;
-                $_SESSION['birth_date'] = $birth_date;
 
-                switch ($rol) {
+                switch ($role_id) {
                     case 'ADMIN':
                         header('Location: ../admin/dashboard.php');
-                        break;
+                        exit();
                     case 'PROFESSOR':
                         header('Location: ../professor/dashboard.php');
-                        break;
+                        exit();
                     case 'STUDENT':
                         header('Location: ../student/dashboard.php');
-                        break;
+                        exit();
                     default:
                         echo 'Invalid Credentials';
                         break;
@@ -49,12 +54,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $stmt->close();
-        $conn->close();
     } else {
         echo "Please, fill all the required fields";
     }
+
+    $conn->close();
+} else {
+    echo "Please, submit the form";
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -63,8 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="./assets/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.15/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
     <style>
         .material-symbols-outlined {
@@ -85,21 +93,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <span class="text-zinc-600">Welcome!</span>
             <div class="relative">
-                <input name="email" type="email" placeholder="Email"
-                    class="h-10 border border-zinc-300 bg-white rounded-sm px-3" required>
+                <input name="email" type="email" placeholder="Email" class="h-10 border border-zinc-300 bg-white rounded-sm px-3" required>
                 <span class="material-symbols-outlined absolute z-10 mt-3 right-3 text-zinc-500">mail</span>
             </div>
             <div class="relative">
-                <input name="password" type="password" placeholder="Password"
-                    class="h-10 border border-zinc-300 bg-white rounded-sm px-3" required>
+                <input name="password" type="password" placeholder="Password" class="h-10 border border-zinc-300 bg-white rounded-sm px-3" required>
                 <span class="material-symbols-outlined absolute z-10 mt-3 right-3 text-zinc-500">lock</span>
             </div>
-            <input type="submit" value="Sign in"
-                class="text-white font-semibold p-2 px-3 bg-blue-500 rounded-md self-end w-20">
+            <input type="submit" value="Sign in" class="text-white font-semibold p-2 px-3 bg-blue-500 rounded-md self-end w-20">
         </form>
     </div>
 </body>
 
 </html>
-
-
